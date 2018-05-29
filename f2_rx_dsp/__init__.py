@@ -1,5 +1,5 @@
 # f2_dsp class 
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 25.04.2018 16:26
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 23.05.2018 17:42
 import numpy as np
 import scipy.signal as sig
 import tempfile
@@ -214,7 +214,7 @@ class f2_rx_dsp(verilog,thesdk):
             str="Output signal range is %i" %(maximum)
             self.print_log({'type':'I', 'msg': str})
         fid.close()
-        os.remove(self._outfile)
+        #os.remove(self._outfile)
         #Copy the value to multiple outputs for users
         self.distribute_result(out)
 

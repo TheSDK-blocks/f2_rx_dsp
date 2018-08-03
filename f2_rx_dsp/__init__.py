@@ -9,7 +9,6 @@ import time
 
 from refptr import *
 from thesdk import *
-from rtl import *
 from f2_decimator import *
 import signal_generator_802_11n as sg80211n
 

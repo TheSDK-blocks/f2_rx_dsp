@@ -1,5 +1,5 @@
 # f2_dsp class 
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 23.05.2018 17:42
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 08.08.2018 18:45
 import numpy as np
 import scipy.signal as sig
 import tempfile
@@ -34,6 +34,7 @@ class f2_rx_dsp(verilog,thesdk):
         self.queue= []                   #by default, no parallel processing
         self._decimated=refptr()         #signals sampled at rs_dsp
         self._classfile=os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
+
         self.DEBUG= False
         if len(arg)>=1:
             parent=arg[0]
@@ -46,7 +47,9 @@ class f2_rx_dsp(verilog,thesdk):
         self.iptr_A.Value=[refptr() for _ in range(4)]
         self._decimated.Value=[refptr() for _ in range(4)]
         self._index=refptr()
+        self.preserve_iofiles='False'
         self.init()
+
     def init(self):
         self.def_verilog()
 

@@ -1,5 +1,5 @@
-# f2_dsp class 
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 08.08.2018 18:45
+#f2_dsp class 
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 14.08.2018 14:46
 import numpy as np
 import scipy.signal as sig
 import tempfile
@@ -7,8 +7,8 @@ import subprocess
 import shlex
 import time
 
-from refptr import *
 from thesdk import *
+from f2_util_classes import *
 from f2_decimator import *
 import signal_generator_802_11n as sg80211n
 
@@ -40,13 +40,9 @@ class f2_rx_dsp(verilog,thesdk):
             parent=arg[0]
             self.copy_propval(parent,self.proplist)
             self.parent =parent;
-        #This looks weird, but it is because it can be easily expanded
-        self.iptr_A.Value=[refptr() for _ in range(self.Rxantennas) ]
-        #The number of outputs is fixed to 4 because of implementation
         #What is outputted to these 4 ports is selected with modes
-        self.iptr_A.Value=[refptr() for _ in range(4)]
-        self._decimated.Value=[refptr() for _ in range(4)]
-        self._index=refptr()
+        self.iptr_A.Value=[refptr() for _ in range(self.Rxantennas)]
+        self._io_ofifo=iofifosigs(**{'users':self.Users})
         self.preserve_iofiles='False'
         self.init()
 
@@ -134,51 +130,68 @@ class f2_rx_dsp(verilog,thesdk):
             self.print_log({'type':'I', 'msg': "Applying RX ouput mode %s - Bypass" %(self.rx_output_mode) })
             #Bypass the sampling rate is NOT reduced
             for k in range(self.Rxantennas):
-                self._decimated.Value[k].Value=self.iptr_A.Value[k].Value.reshape(-1,1)
+                self._io_ofifo.data[k].udata.Value=self.iptr_A.Value[k].Value.reshape(-1,1)
+                self._io_ofifo.data[k].uindex.Value=k*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
+                self._io_ofifo.rxindex.Value=0*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
         elif (self.rx_output_mode==1):
             self.print_log({'type':'I', 'msg': "Applying RX ouput mode %s - User %s selected from all RX's" %(self.rx_output_mode, self.Userindex) })
             for k in range(self.Rxantennas):
-                self._decimated.Value[k].Value=seluser[k].reshape(-1,1)
+                self._io_ofifo.data[k].udata.Value=seluser[k].reshape(-1,1)
+                self._io_ofifo.data[k].uindex.Value=self.Userindex*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
+                self._io_ofifo.rxindex.Value=0*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
+
+
         elif (self.rx_output_mode==2):
             self.print_log({'type':'I', 'msg': "Applying RX ouput mode %s - RX %s selected for all users's" %(self.rx_output_mode, self.Rxindex) })
             for k in range(self.Users):
-                self._decimated.Value[k].Value=selrx[k].reshape(-1,1)
+                self._io_ofifo.data[k].udata.Value=selrx[k].reshape(-1,1)
+                self._io_ofifo.data[k].uindex.Value=k*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
+                self._io_ofifo.data[k].rxindex.Value=self.Rxindex*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
         elif (self.rx_output_mode==3):
             self.print_log({'type':'I', 'msg': "Applying RX ouput mode %s - RX %s and user %s selected to ouput index 0" %(self.rx_output_mode, self.Rxindex, self.Userindex) })
             for k in range(self.Users):
                 if k==0:
-                    self._decimated.Value[k].Value=selrxuser.reshape(-1,1)
+                    self._io_ofifo.data[k].udata.Value=selrxuser.reshape(-1,1)
+                    self._io_ofifo.data[k].uindex.Value=self.Userindex
+                    self._io_ofifo.rxindex.Value=self.Rxindex
                 else:
-                    self._decimated.Value[k].Value=np.zeros_like(selrxuser.reshape(-1,1))
+                    self._io_ofifo.data[k].udata.Value=np.zeros_like(selrxuser.reshape(-1,1))
+                    self._io_ofifo.data[k].uindex.Value=self.Userindex*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
+
+                    self._io_ofifo.rxindex.Value=self.Rxindex*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
+
         elif (self.rx_output_mode==4):
             self.print_log({'type':'I', 'msg': "Applying RX ouput mode %s - User data is streamed out in time-interleaved indexed order from four DSP outputs. Output position index=rxindex" %(self.rx_output_mode) })
             for k in range(self.Rxantennas):
-                self._decimated.Value[k].Value=indexeduserstream[k].reshape(-1,1)
-                #define here the index stream
-            self._index.Value=np.mod(np.arange(self._decimated.Value[0].shape[0]),4)
+                self._io_ofifo.data[k].udata.Value=indexeduserstream[k].reshape(-1,1)
+                self._io_ofifo.data[k].uindex.Value=np.mod(np.arange(self._io_ofifo.data[k].udata.Value[0].shape[0]),self.Users)
+                self._io_ofifo.rxindex.Value=0*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
         elif (self.rx_output_mode==5):
             self.print_log({'type':'I', 'msg': "Applying RX ouput mode %s - User data is streamed out in time-interleaved indexed order from four DSP outputs. Output position index=user index" %(self.rx_output_mode) })
             for k in range(self.Users):
-                self._decimated.Value[k].Value=indexedrxstream[k].reshape(-1,1)
-                #define here the index stream
-            self._index.Value=np.mod(np.arange(self._decimated.Value[0].shape[0]),4)
+                self._io_ofifo.data[k].udata.Value=indexedrxstream[k].reshape(-1,1)
+                self._io_ofifo.data[k].uindex.Value=0*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
+                self._io_ofifo.rxindex.Value=np.mod(np.arange(self._io_ofifo.data[k].udata.Value[0].shape[0]),self.Rxantennas)
         elif (self.rx_output_mode==6):
             self.print_log({'type':'I', 'msg': "Applying RX ouput mode %s - Summed data is streamed out. Output position index is user index" %(self.rx_output_mode) })
             for k in range(self.Users):
-                self._decimated.Value[k].Value=sumuserstream[:,k].reshape(-1,1)
+                self._io_ofifo.data[k].udata.Value=sumuserstream[:,k].reshape(-1,1)
+                self._io_ofifo.data[k].uindex.Value=k*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
+                self._io_ofifo.data.rxindex.Value=0*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
         else:
             #Bypass
             self.print_log({'type':'I', 'msg': "Applying RX ouput mode %s - Bypass" %(self.rx_output_mode) })
             for k in range(self.Rxantennas):
-                self._decimated.Value[k].Value=self.iptr_A.Value[k].Value.reshape(-1,1)
-
+                self._io_ofifo.data[k].udata.Value=self.iptr_A.Value[k].Value.reshape(-1,1)
+                self._io_ofifo.data[k].uindex.Value=k*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
+                self._io_ofifo.rxindex.Value=0*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
 
     def distribute_result(self,result):
         for k in range(self.Users):
             if self.par:
                 self.queue.put(result[:,k].reshape(-1,1))
-            self._decimated.Value[k].Value=result[:,k].reshape((-1,1))
-
+            self._io_ofifo.data[k].udata.Value=result[:,k].reshape((-1,1))
+    
     def write_infile(self):
         rndpart=os.path.basename(tempfile.mkstemp()[1])
         if self.model=='sv':

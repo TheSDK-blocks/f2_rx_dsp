@@ -1,5 +1,5 @@
 #f2_dsp class 
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 14.08.2018 14:46
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.08.2018 13:13
 import numpy as np
 import scipy.signal as sig
 import tempfile
@@ -126,6 +126,7 @@ class f2_rx_dsp(verilog,thesdk):
         indexeduserstream= [decimated[k].reshape(-1,1) for k in range(self.Rxantennas)]
         indexedrxstream=[decimated[:][:][k].reshape(-1,1) for k in range(self.Users)]
          
+        print(self.rx_output_mode)
         if (self.rx_output_mode==0):
             self.print_log({'type':'I', 'msg': "Applying RX ouput mode %s - Bypass" %(self.rx_output_mode) })
             #Bypass the sampling rate is NOT reduced
@@ -139,8 +140,6 @@ class f2_rx_dsp(verilog,thesdk):
                 self._io_ofifo.data[k].udata.Value=seluser[k].reshape(-1,1)
                 self._io_ofifo.data[k].uindex.Value=self.Userindex*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
                 self._io_ofifo.rxindex.Value=0*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
-
-
         elif (self.rx_output_mode==2):
             self.print_log({'type':'I', 'msg': "Applying RX ouput mode %s - RX %s selected for all users's" %(self.rx_output_mode, self.Rxindex) })
             for k in range(self.Users):
@@ -159,7 +158,6 @@ class f2_rx_dsp(verilog,thesdk):
                     self._io_ofifo.data[k].uindex.Value=self.Userindex*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
 
                     self._io_ofifo.rxindex.Value=self.Rxindex*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
-
         elif (self.rx_output_mode==4):
             self.print_log({'type':'I', 'msg': "Applying RX ouput mode %s - User data is streamed out in time-interleaved indexed order from four DSP outputs. Output position index=rxindex" %(self.rx_output_mode) })
             for k in range(self.Rxantennas):
@@ -177,7 +175,7 @@ class f2_rx_dsp(verilog,thesdk):
             for k in range(self.Users):
                 self._io_ofifo.data[k].udata.Value=sumuserstream[:,k].reshape(-1,1)
                 self._io_ofifo.data[k].uindex.Value=k*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
-                self._io_ofifo.data.rxindex.Value=0*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
+                self._io_ofifo.rxindex.Value=0*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
         else:
             #Bypass
             self.print_log({'type':'I', 'msg': "Applying RX ouput mode %s - Bypass" %(self.rx_output_mode) })

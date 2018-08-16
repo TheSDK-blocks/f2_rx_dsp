@@ -1,5 +1,5 @@
 #f2_dsp class 
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.08.2018 13:13
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.08.2018 17:31
 import numpy as np
 import scipy.signal as sig
 import tempfile
@@ -14,6 +14,10 @@ import signal_generator_802_11n as sg80211n
 
 
 class f2_rx_dsp(verilog,thesdk):
+    @property
+    def _classfile(self):
+        return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
+
     def __init__(self,*arg): 
         self.proplist = [ 'Rs', 'Rs_dsp', 'dsp_decimator_scales'];    #properties that can be propagated from parent
         self.Rs = 160e6;                 # sampling frequency
@@ -33,7 +37,6 @@ class f2_rx_dsp(verilog,thesdk):
         self.par= False                  #by default, no parallel processing
         self.queue= []                   #by default, no parallel processing
         self._decimated=refptr()         #signals sampled at rs_dsp
-        self._classfile=os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
 
         self.DEBUG= False
         if len(arg)>=1:

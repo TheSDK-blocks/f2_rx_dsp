@@ -1,5 +1,5 @@
 #f2_dsp class 
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.08.2018 17:31
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 20.08.2018 18:44
 import numpy as np
 import scipy.signal as sig
 import tempfile
@@ -233,23 +233,4 @@ class f2_rx_dsp(verilog,thesdk):
         #os.remove(self._outfile)
         #Copy the value to multiple outputs for users
         self.distribute_result(out)
-
-     #This is the first effort to parametrize parallel run
-     #def parallel_run(**{kwargs})
-     #   objectlist=kwargs.get('objectlist'=[])
-     #   cmd=kwargs.get('cmd'=[])
-     #   k=0
-     #   que1=[]
-     #   proc1=[]
-     #   out=[]
-     #   for i in objectlist: 
-     #       #At this point, object must be properly inited
-     #       que1.append(multiprocessing.Queue())
-     #       proc1.append(multiprocessing.Process(target=i.run, args=(que1[k],)))
-     #       proc1[k].start()
-     #       k += 1 
-
-     #   for i in range(len(objectlist)):
-     #       i._Z.Value=que1[i].get()
-     #       proc1[i].join()
   

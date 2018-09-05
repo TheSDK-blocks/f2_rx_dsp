@@ -1,5 +1,5 @@
 #f2_dsp class 
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 20.08.2018 18:44
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 03.09.2018 19:53
 import numpy as np
 import scipy.signal as sig
 import tempfile
@@ -19,7 +19,7 @@ class f2_rx_dsp(verilog,thesdk):
         return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
 
     def __init__(self,*arg): 
-        self.proplist = [ 'Rs', 'Rs_dsp', 'dsp_decimator_scales'];    #properties that can be propagated from parent
+        self.proplist = [ 'Rs', 'Rs_dsp', 'dsp_decimator_scales', 'dsp_decimator_cic3shift'];    #properties that can be propagated from parent
         self.Rs = 160e6;                 # sampling frequency
         self.Rs_dsp=20e6
         #These are fixed
@@ -31,6 +31,7 @@ class f2_rx_dsp(verilog,thesdk):
         self.model='py';                 #can be set externally, but is not propagated
         self.dsp_decimator_model='py'    #Used only for python model byt can be set for testing
         self.dsp_decimator_scales=[1,1,1,1]
+        self.dsp_decimator_cic3shift=0
         self.rtldiscard=50
         self.rx_output_mode=1
         #self.dspmode='local';              # [ 'local' | 'cpu' ]  
@@ -60,6 +61,7 @@ class f2_rx_dsp(verilog,thesdk):
             self.decimator[i].model=self.dsp_decimator_model
             self.decimator[i].iptr_A=self.iptr_A.Value[i]
             self.decimator[i].scales=self.dsp_decimator_scales
+            self.decimator[i].cic3shift=self.dsp_decimator_cic3shift
             self.decimator[i].init()
 
         self.mode=self.decimator[0].mode
@@ -69,6 +71,7 @@ class f2_rx_dsp(verilog,thesdk):
             ('g_scale1',self.dsp_decimator_scales[1]),  
             ('g_scale2',self.dsp_decimator_scales[2]),  
             ('g_scale3',self.dsp_decimator_scales[3]),
+            ('g_cic3shift'        , self.dsp_decimator_cic3shift), 
             ('g_mode',self.mode),
             ('g_user_index', 0),
             ('g_antenna_index', 0),

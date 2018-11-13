@@ -1,5 +1,5 @@
 #f2_dsp class 
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 05.09.2018 14:38
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 12.11.2018 17:17
 import numpy as np
 import scipy.signal as sig
 import tempfile
@@ -135,10 +135,10 @@ class f2_rx_dsp(verilog,thesdk):
         selrx=[ decimated[self.Rxindex][:,i].reshape(-1,1) for i in range(self.Users)]
         selrxuser=decimated[self.Rxindex][:,self.Userindex].reshape(-1,1)
         
-        indexeduserstream= [decimated[k].reshape(-1,1) for k in range(self.Rxantennas)]
-        indexedrxstream=[decimated[:][:][k].reshape(-1,1) for k in range(self.Users)]
+        print(decimated[0].shape)
+        print((decimated[0])[:,:].shape)
+        print(range(self.Users))
          
-        print(self.rx_output_mode)
         if (self.rx_output_mode==0):
             self.print_log({'type':'I', 'msg': "Applying RX ouput mode %s - Bypass" %(self.rx_output_mode) })
             #Bypass the sampling rate is NOT reduced
@@ -171,17 +171,11 @@ class f2_rx_dsp(verilog,thesdk):
 
                     self._io_ofifo.rxindex.Value=self.Rxindex*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
         elif (self.rx_output_mode==4):
-            self.print_log({'type':'I', 'msg': "Applying RX ouput mode %s - User data is streamed out in time-interleaved indexed order from four DSP outputs. Output position index=rxindex" %(self.rx_output_mode) })
-            for k in range(self.Rxantennas):
-                self._io_ofifo.data[k].udata.Value=indexeduserstream[k].reshape(-1,1)
-                self._io_ofifo.data[k].uindex.Value=np.mod(np.arange(self._io_ofifo.data[k].udata.Value[0].shape[0]),self.Users)
-                self._io_ofifo.rxindex.Value=0*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
+            self.print_log({'type':'F', 'msg': "RX ouput mode %s - User data streaming in serial manner is no longer supported " %(self.rx_output_mode) })
+
         elif (self.rx_output_mode==5):
-            self.print_log({'type':'I', 'msg': "Applying RX ouput mode %s - User data is streamed out in time-interleaved indexed order from four DSP outputs. Output position index=user index" %(self.rx_output_mode) })
-            for k in range(self.Users):
-                self._io_ofifo.data[k].udata.Value=indexedrxstream[k].reshape(-1,1)
-                self._io_ofifo.data[k].uindex.Value=0*np.ones_like(self._io_ofifo.data[k].udata.Value[0].shape[0])
-                self._io_ofifo.rxindex.Value=np.mod(np.arange(self._io_ofifo.data[k].udata.Value[0].shape[0]),self.Rxantennas)
+            self.print_log({'type':'F', 'msg': "RX ouput mode %s - User data is streamed out in time-interleaved indexed order from four DSP outputs is no longer supported" %(self.rx_output_mode) })
+
         elif (self.rx_output_mode==6):
             self.print_log({'type':'I', 'msg': "Applying RX ouput mode %s - Summed data is streamed out. Output position index is user index" %(self.rx_output_mode) })
             for k in range(self.Users):

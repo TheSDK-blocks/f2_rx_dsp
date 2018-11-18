@@ -1,5 +1,5 @@
 #f2_dsp class 
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 12.11.2018 17:17
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 14.11.2018 11:44
 import numpy as np
 import scipy.signal as sig
 import tempfile
@@ -98,7 +98,7 @@ class f2_rx_dsp(verilog,thesdk):
           self.read_outfile()
 
     def process_input(self):
-        #Could use parallel for here
+        #Could use parallel forloop here
         [ self.decimator[i].run() for i in range(self.Rxantennas) ]
 
         #Run decimatiors in parallel
@@ -134,10 +134,6 @@ class f2_rx_dsp(verilog,thesdk):
         seluser=[ decimated[i][:,self.Userindex].reshape(-1,1) for i in range(self.Rxantennas)]
         selrx=[ decimated[self.Rxindex][:,i].reshape(-1,1) for i in range(self.Users)]
         selrxuser=decimated[self.Rxindex][:,self.Userindex].reshape(-1,1)
-        
-        print(decimated[0].shape)
-        print((decimated[0])[:,:].shape)
-        print(range(self.Users))
          
         if (self.rx_output_mode==0):
             self.print_log({'type':'I', 'msg': "Applying RX ouput mode %s - Bypass" %(self.rx_output_mode) })

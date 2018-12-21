@@ -34,7 +34,7 @@ class f2_rx_dsp(verilog,thesdk):
         self.Users=4
         self.Rxindex=0
         self.Userindex=0
-        self.iptr_A = refptr() 
+        self.iptr_A = IO() 
         self.model='py';                 #can be set externally, but is not propagated
         self.dsp_decimator_model='py'    #Used only for python model byt can be set for testing
         self.dsp_decimator_scales=[1,1,1,1]
@@ -51,7 +51,7 @@ class f2_rx_dsp(verilog,thesdk):
             self.copy_propval(parent,self.proplist)
             self.parent =parent;
         #What is outputted to these 4 ports is selected with modes
-        self.iptr_A.Value=[refptr() for _ in range(self.Rxantennas)]
+        self.iptr_A.Data=[refptr() for _ in range(self.Rxantennas)]
         self._io_ofifo=iofifosigs(**{'users':self.Users})
         self.preserve_iofiles='False'
         self.init()
@@ -65,7 +65,7 @@ class f2_rx_dsp(verilog,thesdk):
             self.decimator[i].Rs_high=self.Rs
             self.decimator[i].Rs_low=self.Rs_dsp
             self.decimator[i].model=self.dsp_decimator_model
-            self.decimator[i].iptr_A=self.iptr_A.Value[i]
+            self.decimator[i].iptr_A=self.iptr_A.Data[i]
             self.decimator[i].scales=self.dsp_decimator_scales
             self.decimator[i].cic3shift=self.dsp_decimator_cic3shift
             self.decimator[i].init()
